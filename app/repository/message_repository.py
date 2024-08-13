@@ -29,10 +29,10 @@ class MessageRepository(BaseRepository):
             except IntegrityError as e:
                 session.rollback()
                 raise DuplicatedError(detail=str(e.orig))
-    def load_message(self,chat_id:str) -> List[Dict]:
+    def load_message(self,group_id:int) -> List[Dict]:
         with self.session_factory() as session:
             print(1)
-            query = session.query(self.model).filter(self.model.chat_id == chat_id)
+            query = session.query(self.model).filter(self.model.group_id == group_id)
             print(2)
             messages = query.all()
             print(3)

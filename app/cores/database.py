@@ -8,7 +8,6 @@ from sqlalchemy.orm import Session
 
 from sqlmodel import SQLModel
 from app.models.user import User
-from app.models.message import Message
 
 
 @as_declarative()

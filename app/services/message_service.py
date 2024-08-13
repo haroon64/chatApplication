@@ -13,9 +13,9 @@ class MessageService(BaseService):
     def save_message(self,message_info:message_schema) -> Optional[Message]:
         return self.message_repository.create_message(message_info)
     
-    def get_messages(self,chat_id:str):
+    def get_messages(self,group_id:int):
         print("yes")
-        return self.message_repository.load_message(chat_id)
+        return self.message_repository.load_message(group_id)
     
     
         

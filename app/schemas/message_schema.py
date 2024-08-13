@@ -12,7 +12,7 @@ class message_schema(BaseModel):
     
     content:str
     # date_time:datetime.utcfromtimestamp
-    chat_id:str
+    group_id:int
 
 
 

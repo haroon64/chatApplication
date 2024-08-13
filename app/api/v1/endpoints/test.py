@@ -23,6 +23,6 @@ async def chat(uri):
 
 if __name__ == "__main__":
     client_id = int(input("Enter your client ID: "))
-    uri = f"ws://localhost:8000/api/v1/message/communicate/{client_id}"
+    uri = f"ws://localhost:8000/api/v1/chat/message/{client_id}"
     print(uri)
     asyncio.get_event_loop().run_until_complete(chat(uri))

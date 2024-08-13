@@ -8,72 +8,63 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi import FastAPI, WebSocket
 from datetime import datetime
 from sqlalchemy.orm import Session  
-from app.models.message import Message
 from app.schemas.message_schema import message_schema
 from app.cores.container import Container
 from app.services.message_service import MessageService
 from app.schemas.message_schema import  get_message
+from app.services.group_service import GroupService
+from app.schemas.groups_schema import get_groups
 
 manager = ConnectionManager()
 
 router = APIRouter(
-    prefix="/message",
-    tags=["message"],
+    prefix="/chat",
+    tags=["chat"],
 )
-@router.websocket("/communicate/{chat_id}")
+@router.websocket("/message/{group_id}")
 @inject
-async def websocket_endpoint(websocket: WebSocket,chat_id:str, service: MessageService = Depends(Provide[Container.message_service])): 
-    print(1)
-    await manager.connect(websocket,chat_id)
-    print(2)
+async def websocket_endpoint(websocket: WebSocket, group_id: int, service: MessageService = Depends(Provide[Container.message_service])):
+    await manager.connect(websocket, group_id)
     try:
         while True:
             data = await websocket.receive_text()
             parsed_data = json.loads(data)
-            print(parsed_data)
-          
-           
 
             # Validate and parse data into schema
             message_info = message_schema(
                 sender_id=parsed_data["client_id"],
                 content=parsed_data["text"],
-                
-                chat_id=parsed_data["chat_id"]
-            ) 
-            
-            
-            # Save to database
-            
-            
+                group_id=group_id
+            )
+
             # Modify the type property to 'received'
             parsed_data["type"] = "received"
 
-            # Prepare the response with the modified data
+            # Prepare the response
             response = {"message": json.dumps(parsed_data)}
 
-            print(response)
-            print(json.dumps(response))
-
+            # Broadcast message
+            status = await manager.broadcast(json.dumps(response), group_id, sender=websocket)
             
-            status=await manager.broadcast(json.dumps(response), chat_id,sender=websocket)
-            # Save to database
+            # Save message to the database if it was successfully sent
             if status:
-             
-                service.save_message(message_info)  
-            
+                service.save_message(message_info)
     except WebSocketDisconnect:
         manager.disconnect(websocket)
         try:
             await manager.send_personal_message("Bye!!!", websocket)
-            await manager.broadcast(f"Client #{message_info.client_id} has left", sender=websocket)
+            await manager.broadcast(f"Client #{message_info.sender_id} has left", group_id, sender=websocket)
         except RuntimeError as e:
-            # Handle or log the error if sending fails due to connection being closed
-            print(f"Error sending message after disconnect: {e}")
+            print(f"Error sending message after disconnect: {e}")       
+    
 
-@router.get("/load_messages/{chat_id}",response_model=List[get_message])
+@router.get("/load_messages/{group_id}",response_model=List[get_message])
 @inject
-async def load_message(chat_id: str, service: MessageService = Depends(Provide[Container.message_service])):
-    return service.get_messages(chat_id)
+async def load_message(group_id: int, service: MessageService = Depends(Provide[Container.message_service])):
+    return service.get_messages(group_id)
 
 
+@router.get('/groups', response_model=List[get_groups])
+@inject
+async def groups( service: GroupService = Depends(Provide[Container.group_service])):
+    return service.get_groups()

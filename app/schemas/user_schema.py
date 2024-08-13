@@ -12,7 +12,7 @@ class User(BaseModel):
     email:str
    
     password:str
-    user_token:str
+    user_token:stra
     name:str
 
 
